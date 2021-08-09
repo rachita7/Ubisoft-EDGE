@@ -53,22 +53,25 @@ def get_job_titles(ocr_detection, person_names_pos):
     for i in range(len(ocr_detection)):
         job_titles_list.append(i)
     job_titles_list = list(set(job_titles_list)^set(person_names_pos))
+    # return job_titles_list
 
-#     for x in job_titles_list:
-#         ls = LinkedinScraper(keyword=ocr_detection[x][1],limit=5)
-#         ls.search()
-#         links = ls.parse_links()
-#         person = Person(links[0], driver=driver)
-#         if person.name.upper() == ocr_detection[x][1].upper():
-#             job_titles_list.remove(x)
-#     return job_titles_list
+    for x in job_titles_list:
+        ls = LinkedinScraper(keyword=ocr_detection[x][1],limit=5)
+        ls.search()
+        person = ls.parse_people()
+        sep = '-'
+        stripped = person[0].split(sep, 1)[0]
+        if ocr_detection[x][1].upper() in stripped.upper():
+            print("test " +ocr_detection[x][1].upper())
+            job_titles_list.remove(x)
+    return job_titles_list
 
-# def get_final_names_pos(job_titles_list,ocr_detection):
-#     person_names = []
-#     for i in range(len(ocr_detection)):
-#         person_names.append(i)
-#     person_names = list(set(person_names)^set(job_titles_list))
-#     return person_names
+def get_final_names_pos(job_titles_list,ocr_detection):
+    person_names = []
+    for i in range(len(ocr_detection)):
+        person_names.append(i)
+    person_names = list(set(person_names)^set(job_titles_list))
+    return person_names
 
 def get_all_indexes(ocr_detection):
     total = []

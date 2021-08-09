@@ -76,16 +76,17 @@ class LinkedinScraper(object):
     
 
     
-# ls = LinkedinScraper(keyword="INKYO LEE",limit=5)
+# ls = LinkedinScraper(keyword="Written By",limit=5)
 # ls.search()
 # links = ls.parse_links()
 # profiles = ls.parse_people()
 
-# print(links)
 
-driver = webdriver.Chrome("D:/chromedriver.exe")
-email = "java.oodp.stars@gmail.com"
-password = "javatest"
-actions.login(driver, email, password) # if email and password isnt given, it'll prompt in terminal
-# person = Person(links[0], driver=driver)
+
+# print(stripped)
+# driver = webdriver.Chrome("D:/chromedriver.exe")
+# email = "java.oodp.stars@gmail.com"
+# password = "javatest"
+# actions.login(driver, email, password) # if email and password isnt given, it'll prompt in terminal
+# # person = Person(links[0], driver=driver)
 # print(person.name)

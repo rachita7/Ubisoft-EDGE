@@ -32,7 +32,7 @@ def run_extraction_pipeline():
             print(person_names_pos)
             if len(person_names_pos):
                 job_titles_list = get_job_titles(ocr_detection,person_names_pos)
-                # person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
+                person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
                 all_indexes = get_all_indexes(ocr_detection)
                 midpoints_arr = get_midpoints(all_indexes,ocr_detection)
                 kmeans_clusters = get_kmeans_clusters(job_titles_list,midpoints_arr,'k-means++')
