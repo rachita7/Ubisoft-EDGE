@@ -59,11 +59,12 @@ def get_job_titles(ocr_detection, person_names_pos):
         ls = LinkedinScraper(keyword=ocr_detection[x][1],limit=5)
         ls.search()
         person = ls.parse_people()
-        sep = '-'
-        stripped = person[0].split(sep, 1)[0]
-        if ocr_detection[x][1].upper() in stripped.upper():
-            print("test " +ocr_detection[x][1].upper())
-            job_titles_list.remove(x)
+        if len(person)!=0:
+            sep = '-'
+            stripped = person[0].split(sep, 1)[0]
+            if ocr_detection[x][1].upper() in stripped.upper():
+                print("test " +ocr_detection[x][1].upper())
+                job_titles_list.remove(x)
     return job_titles_list
 
 def get_final_names_pos(job_titles_list,ocr_detection):

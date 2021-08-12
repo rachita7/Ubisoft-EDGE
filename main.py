@@ -21,15 +21,18 @@ def run_extraction_pipeline():
     print(len(imagearray))
     # person_names = []
     # person_names_pos = []
+    overall_jobs_list={}
     for i in range(len(imagearray)):
         person_names = []
         person_names_pos = []
         ocr_detection = ocr(imagearray[i])
+        
         if len(ocr_detection):
             draw_contour_boxes_easy_ocr(imagearray[i],ocr_detection, './contours/'+str(i)+'.jpg')
             get_person_names(person_names,person_names_pos,ocr_detection)
             person_names_pos = remove_duplicate_names(person_names_pos)
-            print(person_names_pos)
+            # print(person_names_pos)
+            
             if len(person_names_pos):
                 job_titles_list = get_job_titles(ocr_detection,person_names_pos)
                 person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
@@ -42,7 +45,8 @@ def run_extraction_pipeline():
                 job_titles_dict = job_title_dict(job_titles_list)
                 final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
                 final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
-                print(final_job_titles_list)
+                overall_jobs_list.update(final_job_titles_list)
+    print(overall_jobs_list)
 
 # if __name__ == "__main__":
 #   app.run(debug=True)
