@@ -9,13 +9,19 @@ from sklearn.cluster import KMeans
 import nltk
 import nltk.tag.stanford as st
 from utils import *
+from transformers import AutoTokenizer, AutoModelForTokenClassification
+from transformers import pipeline
 
 import os
 java_path = "C:/Program Files/Java/jdk-14.0.2/bin/java.exe"
 os.environ['JAVAHOME'] = java_path
 
-tagger = st.StanfordNERTagger('E:/NTU course material/edge/ubisoft/Stanford-nlp-java/english.all.3class.distsim.crf.ser.gz', 'E:/NTU course material/edge/ubisoft/Stanford-nlp-java/stanford-ner.jar')
+tagger = st.StanfordNERTagger('/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/english.all.3class.distsim.crf.ser.gz', '/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/stanford-ner.jar')
 reader = easyocr.Reader(['en'])
+
+tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
+model = AutoModelForTokenClassification.from_pretrained("dslim/bert-base-NER")
+nlp = pipeline("ner", model=model, tokenizer=tokenizer)
 
 # a = reader.readtext(Image.open('/Users/abhishekvaidyanathan/Downloads/Image1.jpg'))
 def ocr(imagearray):
@@ -32,14 +38,21 @@ def draw_contour_boxes_easy_ocr(image, contour_boxes, write_loc):
 def get_person_names(person_names, person_names_pos, ocr_detection):
     i = 0
     for names in ocr_detection:
-        for sent in nltk.sent_tokenize(names[1]):
-            tokens = nltk.tokenize.word_tokenize(sent)
-            tags = tagger.tag(tokens)
-            for tag in tags:
-                if(tag[1] == 'PERSON'):
-                    print(tag)
-                    person_names.append(tags)
-                    person_names_pos.append(i)
+        # for sent in nltk.sent_tokenize(names[1]):
+        #     tokens = nltk.tokenize.word_tokenize(sent)
+        #     tags = tagger.tag(tokens)
+        #     for tag in tags:
+        #         if(tag[1] == 'PERSON'):
+        #             print(tag)
+        #             person_names.append(tags)
+        #             person_names_pos.append(i)
+                    
+        # i = i+1
+        ner  = nlp(names[1].title())
+        if len(ner) != 0:
+            if(ner[0]['entity']=='B-PER'):
+                print(ner)
+                person_names_pos.append(i)
                     
         i = i+1
 
