@@ -1,4 +1,5 @@
 from flask_mongoengine import MongoEngine
+from flask_cors import CORS
 import db
 from pipeline import *
 from optical_flow_spell_corrector import *
@@ -9,6 +10,8 @@ from models import *
 import json
 
 app = Flask(__name__)
+CORS(app)
+
 @app.route('/')
 def hello():
     return "Hello World! I am Kiran"
