@@ -8,7 +8,7 @@ from flask_pymongo import PyMongo
 from pymongo.errors import DuplicateKeyError
 from models import *
 import json
-
+import validators
 app = Flask(__name__)
 CORS(app)
 
@@ -22,7 +22,7 @@ def test():
     db.db.person.insert_one({"name": "John", 'LinkedinURL':"https://www.linkedin.com/in/kiranbodipati/"})
     return "Connected to the data base!"
 
-
+#--------------------------------------------------Helper Functions---------------------------------------------------------------
 def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=False):
     imagearray = uniqueFrames(videoUrl=video, isYoutubeUrl=yt)
     print(len(imagearray))
@@ -53,7 +53,51 @@ def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=Fa
                 final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
                 final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
                 overall_jobs_list.update(final_job_titles_list)
-    print(overall_jobs_list)
+    return overall_jobs_list
+
+
+def covert_to_person_list(job_list, company="", game=""):
+    overall_person_list={}
+    for job in job_list.keys():
+        person_list = job_list[job]
+        for person in person_list:
+            if person not in overall_person_list.keys():
+                overall_person_list[person] =[job]
+            else:
+                overall_person_list[person].append(job)
+    personJsonList=[]
+    personObj={}
+    for person in overall_person_list.keys():
+        personObj["name"]=person
+        personObj["jobs"]=overall_person_list[person]
+        personObj["company"]=company
+        personObj["game"]=game
+        personJsonList.append(personObj)
+    return personJsonList
+
+def search_linkedinUrl(name):
+    return None
+
+#--------------------------------------------------------API Calls-----------------------------------------------------------------
+@app.route("/database/vidUrl", methods=['POST'])
+def get_vid_url():
+    if request.method=='POST':
+        data= request.get_json()
+        if validators.url(data.url):
+            jobList=run_extraction_pipeline(video=data.url, yt=True)
+            person_list=covert_to_person_list(jobList)
+        for person in person_list:
+            personWorksAt=WorksAt(**person)
+            db.db.worksat.insert_one(personWorksAt.to_bson())
+            linkdin=search_linkedinUrl(person["name"])
+            personObj={}
+            personObj["name"]=person["name"]
+            personObj["linkedinUrl"]=linkdin 
+            personmod=Person(**personObj)
+            db.db.person.insert_one(personmod.to_bson())
+        
+
+    
 
 @app.route("/database/persons", methods=['GET', 'POST'])
 def person_read_write():
@@ -134,17 +178,10 @@ def get_delete_one_game():
         return("game does not exist")
 
 
-@app.route("/database/worksAt")
-def covert_to_person_list(job_list):
-    overall_person_list={}
-    for job in job_list.keys():
-        person_list = job_list[job]
-        for person in person_list:
-            if person not in overall_person_list.keys():
-                overall_person_list[person] =[job]
-            else:
-                overall_person_list[person].append(job)
-    personJsonList={}
+# @app.route("/database/worksAt")
+  
+
+
 
 @app.route("/database/getJobs", methods=['GET', 'POST'])
 def get_job_list():
@@ -169,7 +206,7 @@ def get_job_list():
             print("data added")
             return "data added"
 
-job_list={"Written By":['NEIL DRUCKMANN', 'HALLEY GROSS'], "Additional Writing":['JOSH SCHERR', 'RYAN JAMES'], "President":['NEIL DRUCKMANN']}
+#job_list={"Written By":['NEIL DRUCKMANN', 'HALLEY GROSS'], "Additional Writing":['JOSH SCHERR', 'RYAN JAMES'], "President":['NEIL DRUCKMANN']}
 
 # covert_to_person_list(job_list)
 if __name__ == "__main__":

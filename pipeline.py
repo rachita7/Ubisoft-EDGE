@@ -16,7 +16,7 @@ import os
 java_path = "C:/Program Files/Java/jdk-14.0.2/bin/java.exe"
 os.environ['JAVAHOME'] = java_path
 
-tagger = st.StanfordNERTagger('/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/english.all.3class.distsim.crf.ser.gz', '/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/stanford-ner.jar')
+# tagger = st.StanfordNERTagger('/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/english.all.3class.distsim.crf.ser.gz', '/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/stanford-ner.jar')
 reader = easyocr.Reader(['en'])
 
 tokenizer = AutoTokenizer.from_pretrained("dslim/bert-base-NER")
