@@ -1,7 +1,7 @@
 import cv2
 import math
 import numpy as np
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 from PIL import Image
 import easyocr
 # from find_job_titles import FinderAcora
@@ -13,8 +13,8 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import pipeline
 
 import os
-java_path = "C:/Program Files/Java/jdk-14.0.2/bin/java.exe"
-os.environ['JAVAHOME'] = java_path
+# java_path = "C:/Program Files/Java/jdk-14.0.2/bin/java.exe"
+# os.environ['JAVAHOME'] = java_path
 
 # tagger = st.StanfordNERTagger('/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/english.all.3class.distsim.crf.ser.gz', '/Users/abhishekvaidyanathan/Desktop/Ubisoft-EDGE/Stanford-nlp-java/stanford-ner.jar')
 reader = easyocr.Reader(['en'])
@@ -32,7 +32,7 @@ def draw_contour_boxes_easy_ocr(image, contour_boxes, write_loc):
     # image = cv2.imread(filename)
     for contours in contour_boxes:
         image = cv2.rectangle(image, (int(contours[0][0][0]), int(contours[0][0][1])), (int(contours[0][1][0]-contours[0][0][0])+int(contours[0][0][0]), int(contours[0][2][1]-contours[0][0][1])+int(contours[0][0][1])), (0, 255, 0), 2)
-    plt.imshow(image)
+    # plt.imshow(image)
     cv2.imwrite(write_loc,image)
 
 def get_person_names(person_names, person_names_pos, ocr_detection):
@@ -68,16 +68,16 @@ def get_job_titles(ocr_detection, person_names_pos):
     job_titles_list = list(set(job_titles_list)^set(person_names_pos))
     # return job_titles_list
 
-    for x in job_titles_list:
-        ls = LinkedinScraper(keyword=ocr_detection[x][1],limit=5)
-        ls.search()
-        person = ls.parse_people()
-        if len(person)!=0:
-            sep = '-'
-            stripped = person[0].split(sep, 1)[0]
-            if ocr_detection[x][1].upper() in stripped.upper():
-                print("test " +ocr_detection[x][1].upper())
-                job_titles_list.remove(x)
+    # for x in job_titles_list:
+    #     ls = LinkedinScraper(keyword=ocr_detection[x][1],limit=5)
+    #     ls.search()
+    #     person = ls.parse_people()
+    #     if len(person)!=0:
+    #         sep = '-'
+    #         stripped = person[0].split(sep, 1)[0]
+    #         if ocr_detection[x][1].upper() in stripped.upper():
+    #             print("test " +ocr_detection[x][1].upper())
+    #             job_titles_list.remove(x)
     return job_titles_list
 
 def get_final_names_pos(job_titles_list,ocr_detection):

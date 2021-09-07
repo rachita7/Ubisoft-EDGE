@@ -19,7 +19,7 @@ def hello():
 #test to insert data to the data base
 @app.route("/test")
 def test():
-    db.db.person.insert_one({"name": "John", 'LinkedinURL':"https://www.linkedin.com/in/kiranbodipati/"})
+    db.db.person.insert_one({"name": "John", 'linkedinURL':"https://www.linkedin.com/in/kiranbodipati/"})
     return "Connected to the data base!"
 
 #--------------------------------------------------Helper Functions---------------------------------------------------------------
@@ -42,17 +42,19 @@ def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=Fa
             
             if len(person_names_pos):
                 job_titles_list = get_job_titles(ocr_detection,person_names_pos)
-                person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
-                all_indexes = get_all_indexes(ocr_detection)
-                midpoints_arr = get_midpoints(all_indexes,ocr_detection)
-                kmeans_clusters = get_kmeans_clusters(job_titles_list,midpoints_arr,'k-means++')
-                cluster = get_required_clusters(kmeans_clusters,5)
-                all_clusters = get_all_clusters(kmeans_clusters,job_titles_list)
-                nearest_names_jobs = nearest_name_to_jobtitle(job_titles_list,person_names_pos,ocr_detection)
-                job_titles_dict = job_title_dict(job_titles_list)
-                final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
-                final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
-                overall_jobs_list.update(final_job_titles_list)
+                if len(job_titles_list):
+                    person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
+                    all_indexes = get_all_indexes(ocr_detection)
+                    midpoints_arr = get_midpoints(all_indexes,ocr_detection)
+                    kmeans_clusters = get_kmeans_clusters(job_titles_list,midpoints_arr,'k-means++')
+                    cluster = get_required_clusters(kmeans_clusters,5)
+                    all_clusters = get_all_clusters(kmeans_clusters,job_titles_list)
+                    nearest_names_jobs = nearest_name_to_jobtitle(job_titles_list,person_names_pos,ocr_detection)
+                    job_titles_dict = job_title_dict(job_titles_list)
+                    final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
+                    final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
+                    overall_jobs_list.update(final_job_titles_list)
+    print(overall_jobs_list)
     return overall_jobs_list
 
 
@@ -66,36 +68,40 @@ def covert_to_person_list(job_list, company="", game=""):
             else:
                 overall_person_list[person].append(job)
     personJsonList=[]
-    personObj={}
+    print(overall_person_list)
     for person in overall_person_list.keys():
+        personObj={}
         personObj["name"]=person
         personObj["jobs"]=overall_person_list[person]
         personObj["company"]=company
         personObj["game"]=game
         personJsonList.append(personObj)
+    print(personJsonList)
     return personJsonList
 
 def search_linkedinUrl(name):
-    return None
+    return ""
 
 #--------------------------------------------------------API Calls-----------------------------------------------------------------
 @app.route("/database/vidUrl", methods=['POST'])
 def get_vid_url():
     if request.method=='POST':
         data= request.get_json()
-        if validators.url(data.url):
-            jobList=run_extraction_pipeline(video=data.url, yt=True)
-            person_list=covert_to_person_list(jobList)
+
+        if validators.url(data["url"]):
+            jobList=run_extraction_pipeline(video=data["url"], yt=True)
+            person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
         for person in person_list:
             personWorksAt=WorksAt(**person)
-            db.db.worksat.insert_one(personWorksAt.to_bson())
+            db.db.worksAt.insert_one(personWorksAt.to_bson())
             linkdin=search_linkedinUrl(person["name"])
             personObj={}
             personObj["name"]=person["name"]
-            personObj["linkedinUrl"]=linkdin 
+            personObj["linkedinURL"]=linkdin 
             personmod=Person(**personObj)
             db.db.person.insert_one(personmod.to_bson())
         
+        return jsonify(person_list)
 
     
 
