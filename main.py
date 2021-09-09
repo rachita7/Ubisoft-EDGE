@@ -100,17 +100,24 @@ def get_vid_url():
                 person=WorksAt(**doc)
                 person = person.to_json()
                 person_job_list.append(person)
-            return jsonify(person_job_list)
+            new_person_list=[]
+            for person in person_job_list:
+                dat =db.db.person.find_one({"name":person["name"]})
+                person["linkedinURL"]=dat["linkedinURL"]
+                new_person_list.append(person)
+            return jsonify(new_person_list)
         else:
             if validators.url(data["url"]):
                 jobList=run_extraction_pipeline(video=data["url"], yt=True)
                 person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
+            new_person_list=[]
             for person in person_list:
                 personWorksAt=WorksAt(**person)
                 # db.db.worksAt.insert_one(personWorksAt.to_bson())
                 insert_result = db.db.worksAt.insert_one(personWorksAt.to_bson())
                 db.db.worksAt.id = PydanticObjectId(str(insert_result.inserted_id))
                 linkdin=search_linkedinUrl(person["name"], person["company"])
+                person["linkedinURL"]=linkdin
                 personObj={}
                 personObj["name"]=person["name"]
                 personObj["linkedinURL"]=linkdin 
@@ -122,7 +129,7 @@ def get_vid_url():
             # db.db.vidData.insert_one(data.to_bson())
             insert_result = db.db.vidData.insert_one(data.to_bson())
             db.db.vidData.id = PydanticObjectId(str(insert_result.inserted_id))
-            return jsonify(person_list)
+            return jsonify(new_person_list)
 
     
 
