@@ -107,15 +107,21 @@ def get_vid_url():
                 person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
             for person in person_list:
                 personWorksAt=WorksAt(**person)
-                db.db.worksAt.insert_one(personWorksAt.to_bson())
+                # db.db.worksAt.insert_one(personWorksAt.to_bson())
+                insert_result = db.db.worksAt.insert_one(personWorksAt.to_bson())
+                db.db.worksAt.id = PydanticObjectId(str(insert_result.inserted_id))
                 linkdin=search_linkedinUrl(person["name"], person["company"])
                 personObj={}
                 personObj["name"]=person["name"]
                 personObj["linkedinURL"]=linkdin 
                 personmod=Person(**personObj)
-                db.db.person.insert_one(personmod.to_bson())
+                # db.db.person.insert_one(personmod.to_bson())
+                insert_result = db.db.person.insert_one(personmod.to_bson())
+                db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
             data=VidData(**data)
-            db.db.vidData.insert_one(data.to_bson())
+            # db.db.vidData.insert_one(data.to_bson())
+            insert_result = db.db.vidData.insert_one(data.to_bson())
+            db.db.vidData.id = PydanticObjectId(str(insert_result.inserted_id))
             return jsonify(person_list)
 
     
@@ -130,7 +136,9 @@ def person_read_write():
         else:
             person=Person(**raw_person)
             # print(raw_person)
-            db.db.person.insert_one(person.to_bson())
+            insert_result = db.db.person.insert_one(person.to_bson())
+            # insert_result = person.insert_one(person.to_bson())
+            db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
             print("person added")
             return "person added"
     
@@ -169,7 +177,8 @@ def game_read_write():
             return("Game Exists")
         else:
             game=Game(**raw_game)
-            db.db.game.insert_one(game.to_bson())
+            insert_result = db.db.game.insert_one(game.to_bson())
+            db.db.game.id = PydanticObjectId(str(insert_result.inserted_id))
             print("game added")
             return "game added"
     
@@ -223,7 +232,8 @@ def get_job_list():
         else:
             person=WorksAt(**raw_jobs)
             # print(raw_person)
-            db.db.worksAt.insert_one(person.to_bson())
+            insert_result = db.db.worksAt.insert_one(person.to_bson())
+            db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
             print("data added")
             return "data added"
 
