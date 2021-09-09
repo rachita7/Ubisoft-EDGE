@@ -79,29 +79,44 @@ def covert_to_person_list(job_list, company="", game=""):
     print(personJsonList)
     return personJsonList
 
-def search_linkedinUrl(name):
-    return ""
+def search_linkedinUrl(name, company):
+    ls = LinkedinScraper(keyword=name + " "+company,limit=25)
+    ls.search()
+    links = ls.parse_links()
+    if len(links)==0:
+        return ""
+    else:
+        return links[0]
 
 #--------------------------------------------------------API Calls-----------------------------------------------------------------
 @app.route("/database/vidUrl", methods=['POST'])
 def get_vid_url():
     if request.method=='POST':
         data= request.get_json()
-
-        if validators.url(data["url"]):
-            jobList=run_extraction_pipeline(video=data["url"], yt=True)
-            person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
-        for person in person_list:
-            personWorksAt=WorksAt(**person)
-            db.db.worksAt.insert_one(personWorksAt.to_bson())
-            linkdin=search_linkedinUrl(person["name"])
-            personObj={}
-            personObj["name"]=person["name"]
-            personObj["linkedinURL"]=linkdin 
-            personmod=Person(**personObj)
-            db.db.person.insert_one(personmod.to_bson())
-        
-        return jsonify(person_list)
+        if db.db.vidData.find_one(data):
+            person_job_cursor=db.db.worksAt.find({"game":data["game"], "company":data["company"]})
+            person_job_list=[]
+            for doc in person_job_cursor:
+                person=WorksAt(**doc)
+                person = person.to_json()
+                person_job_list.append(person)
+            return jsonify(person_job_list)
+        else:
+            if validators.url(data["url"]):
+                jobList=run_extraction_pipeline(video=data["url"], yt=True)
+                person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
+            for person in person_list:
+                personWorksAt=WorksAt(**person)
+                db.db.worksAt.insert_one(personWorksAt.to_bson())
+                linkdin=search_linkedinUrl(person["name"], person["company"])
+                personObj={}
+                personObj["name"]=person["name"]
+                personObj["linkedinURL"]=linkdin 
+                personmod=Person(**personObj)
+                db.db.person.insert_one(personmod.to_bson())
+            data=VidData(**data)
+            db.db.vidData.insert_one(data.to_bson())
+            return jsonify(person_list)
 
     
 

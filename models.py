@@ -71,3 +71,16 @@ class WorksAt(BaseModel):
         # if data["_id"] is None:
         #     data.pop("_id")
         return data
+
+class VidData(BaseModel):
+    _id: Optional[PydanticObjectId] = Field(None, alias="_id")
+    url: str
+    game: str
+    company: str
+    def to_json(self):
+        return jsonable_encoder(self, exclude_none=True)
+    def to_bson(self):
+        data = self.dict(by_alias=True, exclude_none=True)
+        # if data["_id"] is None:
+        #     data.pop("_id")
+        return data
