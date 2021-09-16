@@ -8,7 +8,7 @@ from flask_pymongo import PyMongo
 from pymongo.errors import DuplicateKeyError
 from models import *
 import json
-
+import validators
 app = Flask(__name__)
 CORS(app)
 
@@ -19,10 +19,10 @@ def hello():
 #test to insert data to the data base
 @app.route("/test")
 def test():
-    db.db.person.insert_one({"name": "John", 'LinkedinURL':"https://www.linkedin.com/in/kiranbodipati/"})
+    db.db.person.insert_one({"name": "John", 'linkedinURL':"https://www.linkedin.com/in/kiranbodipati/"})
     return "Connected to the data base!"
 
-
+#--------------------------------------------------Helper Functions---------------------------------------------------------------
 def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=False):
     imagearray = uniqueFrames(videoUrl=video, isYoutubeUrl=yt)
     print(len(imagearray))
@@ -42,18 +42,99 @@ def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=Fa
             
             if len(person_names_pos):
                 job_titles_list = get_job_titles(ocr_detection,person_names_pos)
-                person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
-                all_indexes = get_all_indexes(ocr_detection)
-                midpoints_arr = get_midpoints(all_indexes,ocr_detection)
-                kmeans_clusters = get_kmeans_clusters(job_titles_list,midpoints_arr,'k-means++')
-                cluster = get_required_clusters(kmeans_clusters,5)
-                all_clusters = get_all_clusters(kmeans_clusters,job_titles_list)
-                nearest_names_jobs = nearest_name_to_jobtitle(job_titles_list,person_names_pos,ocr_detection)
-                job_titles_dict = job_title_dict(job_titles_list)
-                final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
-                final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
-                overall_jobs_list.update(final_job_titles_list)
+                if len(job_titles_list):
+                    person_names_pos = get_final_names_pos(job_titles_list,ocr_detection)
+                    all_indexes = get_all_indexes(ocr_detection)
+                    midpoints_arr = get_midpoints(all_indexes,ocr_detection)
+                    kmeans_clusters = get_kmeans_clusters(job_titles_list,midpoints_arr,'k-means++')
+                    cluster = get_required_clusters(kmeans_clusters,5)
+                    all_clusters = get_all_clusters(kmeans_clusters,job_titles_list)
+                    nearest_names_jobs = nearest_name_to_jobtitle(job_titles_list,person_names_pos,ocr_detection)
+                    job_titles_dict = job_title_dict(job_titles_list)
+                    final_cluster = final_clusters(all_clusters,job_titles_list,nearest_names_jobs,job_titles_dict,ocr_detection)
+                    final_job_titles_list = get_final_job_titles_list(job_titles_dict,ocr_detection)
+                    overall_jobs_list.update(final_job_titles_list)
     print(overall_jobs_list)
+    return overall_jobs_list
+
+
+def covert_to_person_list(job_list, company="", game=""):
+    overall_person_list={}
+    for job in job_list.keys():
+        person_list = job_list[job]
+        for person in person_list:
+            if person not in overall_person_list.keys():
+                overall_person_list[person] =[job]
+            else:
+                overall_person_list[person].append(job)
+    personJsonList=[]
+    print(overall_person_list)
+    for person in overall_person_list.keys():
+        personObj={}
+        personObj["name"]=person
+        personObj["jobs"]=overall_person_list[person]
+        personObj["company"]=company
+        personObj["game"]=game
+        personJsonList.append(personObj)
+    print(personJsonList)
+    return personJsonList
+
+def search_linkedinUrl(name, company):
+    ls = LinkedinScraper(keyword=name + " "+company,limit=25)
+    ls.search()
+    links = ls.parse_links()
+    if len(links)==0:
+        return ""
+    else:
+        return links[0]
+
+#--------------------------------------------------------API Calls-----------------------------------------------------------------
+@app.route("/database/vidUrl", methods=['POST'])
+def get_vid_url():
+    if request.method=='POST':
+        data= request.get_json()
+        if db.db.vidData.find_one(data):
+            person_job_cursor=db.db.worksAt.find({"game":data["game"], "company":data["company"]})
+            person_job_list=[]
+            for doc in person_job_cursor:
+                person=WorksAt(**doc)
+                person = person.to_json()
+                person_job_list.append(person)
+            new_person_list=[]
+            for person in person_job_list:
+                dat =db.db.person.find_one({"name":person["name"]})
+                person["linkedinURL"]=dat["linkedinURL"]
+                new_person_list.append(person)
+            return jsonify(new_person_list)
+        else:
+            if validators.url(data["url"]):
+                jobList=run_extraction_pipeline(video=data["url"], yt=True)
+                person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"])
+            new_person_list=[]
+            for person in person_list:
+                personWorksAt=WorksAt(**person)
+                # db.db.worksAt.insert_one(personWorksAt.to_bson())
+                insert_result = db.db.worksAt.insert_one(personWorksAt.to_bson())
+                db.db.worksAt.id = PydanticObjectId(str(insert_result.inserted_id))
+                # linkdin=search_linkedinUrl(person["name"], person["company"])
+                search_string=person["name"].lower().replace(" ", "%20")+"%20"+person["company"].lower().replace(" ", "%20")
+                linkdin="https://www.linkedin.com/search/results/people/?keywords="+ search_string +"&origin=GLOBAL_SEARCH_HEADER"
+                person["linkedinURL"]=linkdin
+                personObj={}
+                personObj["name"]=person["name"]
+                personObj["linkedinURL"]=linkdin 
+                personmod=Person(**personObj)
+                new_person_list.append(person)
+                # db.db.person.insert_one(personmod.to_bson())
+                insert_result = db.db.person.insert_one(personmod.to_bson())
+                db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
+            data=VidData(**data)
+            # db.db.vidData.insert_one(data.to_bson())
+            insert_result = db.db.vidData.insert_one(data.to_bson())
+            db.db.vidData.id = PydanticObjectId(str(insert_result.inserted_id))
+            return jsonify(new_person_list)
+
+    
 
 @app.route("/database/persons", methods=['GET', 'POST'])
 def person_read_write():
@@ -65,7 +146,9 @@ def person_read_write():
         else:
             person=Person(**raw_person)
             # print(raw_person)
-            db.db.person.insert_one(person.to_bson())
+            insert_result = db.db.person.insert_one(person.to_bson())
+            # insert_result = person.insert_one(person.to_bson())
+            db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
             print("person added")
             return "person added"
     
@@ -104,7 +187,8 @@ def game_read_write():
             return("Game Exists")
         else:
             game=Game(**raw_game)
-            db.db.game.insert_one(game.to_bson())
+            insert_result = db.db.game.insert_one(game.to_bson())
+            db.db.game.id = PydanticObjectId(str(insert_result.inserted_id))
             print("game added")
             return "game added"
     
@@ -134,17 +218,10 @@ def get_delete_one_game():
         return("game does not exist")
 
 
-@app.route("/database/worksAt")
-def covert_to_person_list(job_list):
-    overall_person_list={}
-    for job in job_list.keys():
-        person_list = job_list[job]
-        for person in person_list:
-            if person not in overall_person_list.keys():
-                overall_person_list[person] =[job]
-            else:
-                overall_person_list[person].append(job)
-    personJsonList={}
+# @app.route("/database/worksAt")
+  
+
+
 
 @app.route("/database/getJobs", methods=['GET', 'POST'])
 def get_job_list():
@@ -165,11 +242,12 @@ def get_job_list():
         else:
             person=WorksAt(**raw_jobs)
             # print(raw_person)
-            db.db.worksAt.insert_one(person.to_bson())
+            insert_result = db.db.worksAt.insert_one(person.to_bson())
+            db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
             print("data added")
             return "data added"
 
-job_list={"Written By":['NEIL DRUCKMANN', 'HALLEY GROSS'], "Additional Writing":['JOSH SCHERR', 'RYAN JAMES'], "President":['NEIL DRUCKMANN']}
+#job_list={"Written By":['NEIL DRUCKMANN', 'HALLEY GROSS'], "Additional Writing":['JOSH SCHERR', 'RYAN JAMES'], "President":['NEIL DRUCKMANN']}
 
 # covert_to_person_list(job_list)
 if __name__ == "__main__":

@@ -27,13 +27,15 @@ def uniqueFrames(videoUrl,framerate=15,method='cv.TM_CCOEFF',isYoutubeUrl=True):
     directions_map = np.zeros([args['size'], 5])
     meth=method
     i=0
+    print(isYoutubeUrl)
     if isYoutubeUrl:
       url = videoUrl
       videoPafy = pafy.new(url)
       vidurl = videoPafy.getbest(preftype="mp4")
+      cap = cv.VideoCapture(vidurl.url)
     else:
       vidurl=videoUrl
-    cap = cv.VideoCapture(vidurl)
+      cap = cv.VideoCapture(vidurl)
     frameId=cap.get(1)
 
     frame_previous = cap.read()[1]
