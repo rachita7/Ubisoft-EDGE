@@ -1,5 +1,5 @@
 __pycache__
 venv
-test-images
-videos
-Extract-Frames.ipynb
+/test-images
+/videos
+./Extract-Frames.ipynb

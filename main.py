@@ -116,12 +116,15 @@ def get_vid_url():
                 # db.db.worksAt.insert_one(personWorksAt.to_bson())
                 insert_result = db.db.worksAt.insert_one(personWorksAt.to_bson())
                 db.db.worksAt.id = PydanticObjectId(str(insert_result.inserted_id))
-                linkdin=search_linkedinUrl(person["name"], person["company"])
+                # linkdin=search_linkedinUrl(person["name"], person["company"])
+                search_string=person["name"].lower().replace(" ", "%20")+"%20"+person["company"].lower().replace(" ", "%20")
+                linkdin="https://www.linkedin.com/search/results/people/?keywords="+ search_string +"&origin=GLOBAL_SEARCH_HEADER"
                 person["linkedinURL"]=linkdin
                 personObj={}
                 personObj["name"]=person["name"]
                 personObj["linkedinURL"]=linkdin 
                 personmod=Person(**personObj)
+                new_person_list.append(person)
                 # db.db.person.insert_one(personmod.to_bson())
                 insert_result = db.db.person.insert_one(personmod.to_bson())
                 db.db.person.id = PydanticObjectId(str(insert_result.inserted_id))
