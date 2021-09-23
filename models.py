@@ -64,6 +64,8 @@ class WorksAt(BaseModel):
     game: str
     jobs: List[str]
     company: str
+    year: str
+    platform: str
     def to_json(self):
         return jsonable_encoder(self, exclude_none=True)
     def to_bson(self):
