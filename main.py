@@ -58,7 +58,7 @@ def run_extraction_pipeline(video="./videos/TheLastofUs2Credits_Trim.mp4", yt=Fa
     return overall_jobs_list
 
 
-def covert_to_person_list(job_list, company="", game="", year="", platform=""):
+def covert_to_person_list(job_list, company="", game="", year="", platform="", genre=""):
     overall_person_list={}
     for job in job_list.keys():
         person_list = job_list[job]
@@ -77,6 +77,7 @@ def covert_to_person_list(job_list, company="", game="", year="", platform=""):
         personObj["game"]=game
         personObj["platform"]=platform
         personObj["year"]=year
+        personObj["genre"]=genre
         personJsonList.append(personObj)
     print(personJsonList)
     return personJsonList
@@ -95,23 +96,20 @@ def search_linkedinUrl(name, company):
 def get_vid_url():
     if request.method=='POST':
         data= request.get_json()
-        if db.db.vidData.find_one(data):
+        if db.db.vidData.find_one({"url":data["url"]}):
             person_job_cursor=db.db.worksAt.find({"game":data["game"], "company":data["company"]})
             person_job_list=[]
             for doc in person_job_cursor:
                 person=WorksAt(**doc)
                 person = person.to_json()
-                person_job_list.append(person)
-            new_person_list=[]
-            for person in person_job_list:
                 dat =db.db.person.find_one({"name":person["name"]})
                 person["linkedinURL"]=dat["linkedinURL"]
-                new_person_list.append(person)
-            return jsonify(new_person_list)
+                person_job_list.append(person)
+            return jsonify(person_job_list)
         else:
             if validators.url(data["url"]):
                 jobList=run_extraction_pipeline(video=data["url"], yt=True)
-                person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"], year=data["year"], platform=data["platform"])
+                person_list=covert_to_person_list(jobList, company=data["company"], game=data["game"], year=data["year"], platform=data["platform"], genre=data["genre"])
             new_person_list=[]
             for person in person_list:
                 personWorksAt=WorksAt(**person)
@@ -233,13 +231,10 @@ def get_job_list():
         for doc in job_cursor:
             job=WorksAt(**doc)
             job = job.to_json()
+            dat =db.db.person.find_one({"name":job["name"]})
+            job["linkedinURL"]=dat["linkedinURL"]
             job_list.append(job)
-        new_person_list=[]
-        for person in job_list:
-            dat =db.db.person.find_one({"name":person["name"]})
-            person["linkedinURL"]=dat["linkedinURL"]
-            new_person_list.append(person)
-        return jsonify(new_person_list)
+        return jsonify(job_list)
     
     if request.method=='POST':
         raw_jobs= request.get_json()
