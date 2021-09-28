@@ -65,6 +65,7 @@ class WorksAt(BaseModel):
     jobs: List[str]
     company: str
     year: str
+    genre: str
     platform: str
     def to_json(self):
         return jsonable_encoder(self, exclude_none=True)
