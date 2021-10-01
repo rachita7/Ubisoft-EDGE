@@ -25,9 +25,11 @@ pip install requirements.txt
  export FLASK_APP=main.py
  ```
   In the terminal, Start the flask server using
- ``` flask run 
+ ``` 
+ flask run 
  ```
  or
- ``` python3 main.py 
+ ``` 
+ python3 main.py 
  ```
 
